@@ -1,0 +1,1661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IT Inventory System</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --bg2: #161921;
+    --bg3: #1e2330;
+    --border: #2a3045;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --accent3: #7cfc00;
+    --text: #c8d0e8;
+    --text-dim: #5a6380;
+    --text-bright: #eef2ff;
+    --red: #ff4444;
+    --yellow: #ffcc00;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ─── HEADER ─── */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(13,15,20,0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    height: 60px;
+  }
+
+  .logo {
+    font-family: var(--mono);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .logo::before {
+    content: '▸';
+    color: var(--accent2);
+  }
+
+  nav {
+    display: flex;
+    gap: 0.25rem;
+    margin-left: auto;
+  }
+
+  .nav-btn {
+    background: none;
+    border: 1px solid transparent;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    padding: 0.4rem 1rem;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    transition: all 0.15s;
+    position: relative;
+  }
+
+  .nav-btn:hover, .nav-btn.active {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: rgba(0,212,255,0.05);
+  }
+
+  .nav-btn.active::before {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0; right: 0;
+    height: 2px;
+    background: var(--accent);
+  }
+
+  /* ─── LAYOUT ─── */
+  .main {
+    position: relative;
+    z-index: 1;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ─── PAGE HEADER ─── */
+  .page-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .page-title {
+    font-family: var(--mono);
+    font-size: 1.5rem;
+    color: var(--text-bright);
+    font-weight: 500;
+  }
+
+  .page-subtitle {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    margin-top: 0.25rem;
+    letter-spacing: 0.1em;
+  }
+
+  /* ─── STATS ROW ─── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .stat-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    padding: 1.25rem;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent-color, var(--accent));
+  }
+
+  .stat-card:hover { border-color: var(--accent-color, var(--accent)); }
+
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .stat-value {
+    font-family: var(--mono);
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--accent-color, var(--accent));
+    margin-top: 0.5rem;
+    line-height: 1;
+  }
+
+  .stat-sub {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    margin-top: 0.3rem;
+  }
+
+  /* ─── PANELS ─── */
+  .panel {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    margin-bottom: 1.5rem;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg3);
+  }
+
+  .panel-title {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .panel-body { padding: 1.5rem; }
+
+  /* ─── FORM GRID ─── */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+  .form-group.full { grid-column: 1 / -1; }
+
+  label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  input, select, textarea {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    padding: 0.6rem 0.8rem;
+    outline: none;
+    transition: border-color 0.15s;
+    width: 100%;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px rgba(0,212,255,0.15);
+  }
+
+  select option { background: var(--bg2); }
+
+  textarea { resize: vertical; min-height: 80px; }
+
+  /* ─── BUTTONS ─── */
+  .btn {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.6rem 1.25rem;
+    border: 1px solid;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg);
+    font-weight: 600;
+  }
+
+  .btn-primary:hover { background: #00aacc; border-color: #00aacc; }
+
+  .btn-outline {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--text);
+  }
+
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+  .btn-danger {
+    background: transparent;
+    border-color: var(--red);
+    color: var(--red);
+  }
+
+  .btn-danger:hover { background: rgba(255,68,68,0.1); }
+
+  .btn-sm { padding: 0.3rem 0.7rem; font-size: 0.65rem; }
+
+  .btn-group { display: flex; gap: 0.5rem; margin-top: 1.25rem; }
+
+  /* ─── TABLE ─── */
+  .table-wrap { overflow-x: auto; }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  th {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  td {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(42,48,69,0.5);
+    color: var(--text);
+  }
+
+  tr:hover td { background: rgba(0,212,255,0.03); }
+
+  tr:last-child td { border-bottom: none; }
+
+  .badge {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.6rem;
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border: 1px solid;
+  }
+
+  .badge-active { color: var(--accent3); border-color: var(--accent3); background: rgba(124,252,0,0.08); }
+  .badge-retired { color: var(--text-dim); border-color: var(--border); }
+  .badge-repair { color: var(--yellow); border-color: var(--yellow); background: rgba(255,204,0,0.08); }
+  .badge-low { color: var(--red); border-color: var(--red); background: rgba(255,68,68,0.08); }
+
+  /* ─── SEARCH BAR ─── */
+  .search-bar {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .search-bar input { flex: 1; min-width: 200px; }
+  .search-bar select { width: auto; min-width: 150px; }
+
+  /* ─── CATEGORY PILLS ─── */
+  .cat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1rem;
+  }
+
+  .cat-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: border-color 0.15s;
+    position: relative;
+  }
+
+  .cat-card:hover { border-color: var(--accent); }
+
+  .cat-icon {
+    font-size: 1.5rem;
+    width: 40px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .cat-info { flex: 1; }
+
+  .cat-name {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--text-bright);
+    font-weight: 500;
+  }
+
+  .cat-count {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    margin-top: 0.2rem;
+  }
+
+  .cat-actions { display: flex; gap: 0.4rem; }
+
+  /* ─── REPORTS ─── */
+  .report-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+
+  .chart-panel {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    padding: 1.5rem;
+  }
+
+  .chart-title {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    margin-bottom: 1.25rem;
+  }
+
+  .bar-chart { display: flex; flex-direction: column; gap: 0.6rem; }
+
+  .bar-row { display: flex; align-items: center; gap: 0.75rem; }
+
+  .bar-label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    width: 120px;
+    flex-shrink: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .bar-track {
+    flex: 1;
+    background: var(--bg3);
+    height: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    background: var(--accent);
+    transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+    position: relative;
+  }
+
+  .bar-fill::after {
+    content: attr(data-value);
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--bg);
+    font-weight: 600;
+  }
+
+  .pie-chart {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  .pie-svg { flex-shrink: 0; }
+
+  .legend { display: flex; flex-direction: column; gap: 0.5rem; }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text);
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 0;
+    flex-shrink: 0;
+  }
+
+  /* ─── ALERTS ─── */
+  .alert-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+  .alert-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+  }
+
+  .alert-item.warn { border-color: var(--yellow); background: rgba(255,204,0,0.04); color: var(--yellow); }
+  .alert-item.err { border-color: var(--red); background: rgba(255,68,68,0.04); color: var(--red); }
+  .alert-item.info { border-color: var(--accent); background: rgba(0,212,255,0.04); color: var(--accent); }
+
+  /* ─── TOAST ─── */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: var(--bg3);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    padding: 0.75rem 1.25rem;
+    z-index: 9999;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s;
+    box-shadow: 0 0 20px rgba(0,212,255,0.2);
+  }
+
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.err { border-color: var(--red); color: var(--red); box-shadow: 0 0 20px rgba(255,68,68,0.2); }
+
+  /* ─── SQL VIEWER ─── */
+  .sql-viewer {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 1.25rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--text);
+    max-height: 300px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    line-height: 1.6;
+  }
+
+  .sql-keyword { color: var(--accent2); }
+  .sql-string { color: var(--accent3); }
+  .sql-comment { color: var(--text-dim); }
+
+  /* ─── SCROLLBAR ─── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+  /* ─── MODAL ─── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 500;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--bg2);
+    border: 1px solid var(--accent);
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 0 40px rgba(0,212,255,0.15);
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg3);
+  }
+
+  .modal-title {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 1.2rem;
+    cursor: pointer;
+    font-family: var(--mono);
+    transition: color 0.15s;
+  }
+
+  .modal-close:hover { color: var(--red); }
+
+  .modal-body { padding: 1.5rem; }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 0.8rem;
+  }
+
+  .empty-state .icon { font-size: 2.5rem; margin-bottom: 0.75rem; opacity: 0.4; }
+
+  @media (max-width: 768px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .report-grid { grid-template-columns: 1fr; }
+    nav .nav-btn span { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">IT//INVENTORY</div>
+  <nav>
+    <button class="nav-btn active" onclick="showPage('dashboard')">⬡ Dashboard</button>
+    <button class="nav-btn" onclick="showPage('inventory')">⊞ Assets</button>
+    <button class="nav-btn" onclick="showPage('categories')">◈ Categories</button>
+    <button class="nav-btn" onclick="showPage('reports')">◎ Reports</button>
+    <button class="nav-btn" onclick="showPage('sql')">⌥ SQL</button>
+  </nav>
+</header>
+
+<div class="main">
+
+  <!-- ─── DASHBOARD ─── -->
+  <div class="page active" id="page-dashboard">
+    <div class="page-header">
+      <div>
+        <div class="page-title">// DASHBOARD</div>
+        <div class="page-subtitle">System overview · Real-time metrics</div>
+      </div>
+      <button class="btn btn-outline" onclick="refreshDashboard()">↻ Refresh</button>
+    </div>
+
+    <div class="stats-row" id="stats-row"></div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">◈ Recent Assets</span>
+        </div>
+        <div class="panel-body">
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Asset</th><th>Category</th><th>Status</th><th>Added</th>
+              </tr></thead>
+              <tbody id="recent-assets"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">⚠ Alerts</span>
+        </div>
+        <div class="panel-body">
+          <div class="alert-list" id="alerts-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── INVENTORY ─── -->
+  <div class="page" id="page-inventory">
+    <div class="page-header">
+      <div>
+        <div class="page-title">// ASSETS</div>
+        <div class="page-subtitle">All inventory items</div>
+      </div>
+      <button class="btn btn-primary" onclick="openAddModal()">+ Add Asset</button>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">⊞ Asset Register</span></div>
+      <div class="panel-body">
+        <div class="search-bar">
+          <input type="text" id="search-input" placeholder="Search assets..." oninput="filterAssets()">
+          <select id="filter-cat" onchange="filterAssets()">
+            <option value="">All Categories</option>
+          </select>
+          <select id="filter-status" onchange="filterAssets()">
+            <option value="">All Status</option>
+            <option value="Active">Active</option>
+            <option value="Retired">Retired</option>
+            <option value="In Repair">In Repair</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>ID</th><th>Asset Name</th><th>Category</th><th>Serial No.</th>
+              <th>Location</th><th>Assigned To</th><th>Status</th><th>Purchase Date</th><th>Value</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="assets-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── CATEGORIES ─── -->
+  <div class="page" id="page-categories">
+    <div class="page-header">
+      <div>
+        <div class="page-title">// CATEGORIES</div>
+        <div class="page-subtitle">Asset classification management</div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:340px 1fr; gap:1.5rem">
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">+ New Category</span></div>
+        <div class="panel-body">
+          <div class="form-group">
+            <label>Category Name *</label>
+            <input type="text" id="cat-name" placeholder="e.g. Laptop">
+          </div>
+          <div class="form-group" style="margin-top:1rem">
+            <label>Icon / Emoji</label>
+            <input type="text" id="cat-icon" placeholder="💻" maxlength="4">
+          </div>
+          <div class="form-group" style="margin-top:1rem">
+            <label>Description</label>
+            <textarea id="cat-desc" placeholder="Optional description..." style="min-height:60px"></textarea>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-primary" onclick="addCategory()">+ Add Category</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">◈ All Categories</span></div>
+        <div class="panel-body">
+          <div class="cat-grid" id="cat-grid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── REPORTS ─── -->
+  <div class="page" id="page-reports">
+    <div class="page-header">
+      <div>
+        <div class="page-title">// REPORTS</div>
+        <div class="page-subtitle">Analytics and insights</div>
+      </div>
+      <button class="btn btn-outline" onclick="exportCSV()">↓ Export CSV</button>
+    </div>
+
+    <div class="report-grid" id="report-grid">
+      <div class="chart-panel">
+        <div class="chart-title">Assets by Category</div>
+        <div class="bar-chart" id="chart-category"></div>
+      </div>
+      <div class="chart-panel">
+        <div class="chart-title">Status Distribution</div>
+        <div class="pie-chart" id="chart-status"></div>
+      </div>
+      <div class="chart-panel">
+        <div class="chart-title">Top Locations</div>
+        <div class="bar-chart" id="chart-location"></div>
+      </div>
+      <div class="chart-panel">
+        <div class="chart-title">Value by Category ($)</div>
+        <div class="bar-chart" id="chart-value"></div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:1.5rem">
+      <div class="panel-header"><span class="panel-title">◎ Summary Report</span></div>
+      <div class="panel-body">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Category</th><th>Total Assets</th><th>Active</th><th>Retired</th><th>In Repair</th><th>Total Value</th><th>Avg Value</th></tr></thead>
+            <tbody id="summary-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SQL VIEW ─── -->
+  <div class="page" id="page-sql">
+    <div class="page-header">
+      <div>
+        <div class="page-title">// SQL SCHEMA</div>
+        <div class="page-subtitle">Database structure and raw data</div>
+      </div>
+      <button class="btn btn-outline" onclick="downloadSQL()">↓ Export SQL</button>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">⌥ Schema DDL</span></div>
+      <div class="panel-body">
+        <div class="sql-viewer" id="schema-viewer"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">⌥ Data Export (INSERT statements)</span>
+        <button class="btn btn-sm btn-outline" onclick="refreshSQL()">↻ Refresh</button>
+      </div>
+      <div class="panel-body">
+        <div class="sql-viewer" id="data-viewer"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">⌥ Run Query</span></div>
+      <div class="panel-body">
+        <textarea id="custom-query" style="width:100%;min-height:80px;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:0.8rem;padding:0.75rem;outline:none" placeholder="SELECT * FROM assets WHERE status = 'Active';"></textarea>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="runQuery()">▶ Execute</button>
+          <button class="btn btn-outline" onclick="clearQuery()">✕ Clear</button>
+        </div>
+        <div id="query-result" style="margin-top:1rem"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── ADD/EDIT MODAL ─── -->
+<div class="modal-overlay" id="asset-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">+ Add Asset</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Asset Name *</label>
+          <input type="text" id="m-name" placeholder="Dell Latitude 5520">
+        </div>
+        <div class="form-group">
+          <label>Category *</label>
+          <select id="m-category"><option value="">Select…</option></select>
+        </div>
+        <div class="form-group">
+          <label>Serial Number</label>
+          <input type="text" id="m-serial" placeholder="SN-XXXX-XXXX">
+        </div>
+        <div class="form-group">
+          <label>Asset Tag</label>
+          <input type="text" id="m-tag" placeholder="IT-0001">
+        </div>
+        <div class="form-group">
+          <label>Manufacturer</label>
+          <input type="text" id="m-manufacturer" placeholder="Dell">
+        </div>
+        <div class="form-group">
+          <label>Model</label>
+          <input type="text" id="m-model" placeholder="Latitude 5520">
+        </div>
+        <div class="form-group">
+          <label>Location</label>
+          <input type="text" id="m-location" placeholder="HQ - Floor 2">
+        </div>
+        <div class="form-group">
+          <label>Assigned To</label>
+          <input type="text" id="m-assigned" placeholder="John Doe">
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="m-status">
+            <option>Active</option>
+            <option>Retired</option>
+            <option>In Repair</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Purchase Date</label>
+          <input type="date" id="m-date">
+        </div>
+        <div class="form-group">
+          <label>Purchase Value ($)</label>
+          <input type="number" id="m-value" placeholder="1200.00" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>Warranty Expiry</label>
+          <input type="date" id="m-warranty">
+        </div>
+        <div class="form-group full">
+          <label>Notes</label>
+          <textarea id="m-notes" placeholder="Additional information..."></textarea>
+        </div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="saveAsset()">✓ Save Asset</button>
+        <button class="btn btn-outline" onclick="closeModal()">✕ Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────
+//  IN-BROWSER SQL DATABASE (SQLite via localStorage simulation)
+//  Uses structured data stored in localStorage with SQL-like interface
+// ─────────────────────────────────────────────
+
+const DB = {
+  // Tables
+  categories: [],
+  assets: [],
+  _catId: 1,
+  _assetId: 1,
+
+  init() {
+    const saved = localStorage.getItem('it_inventory_db');
+    if (saved) {
+      const d = JSON.parse(saved);
+      this.categories = d.categories || [];
+      this.assets = d.assets || [];
+      this._catId = d._catId || 1;
+      this._assetId = d._assetId || 1;
+    } else {
+      // Seed data
+      this.execSQL(`INSERT INTO categories (name,icon,description) VALUES ('Laptop','💻','Portable computers and notebooks')`);
+      this.execSQL(`INSERT INTO categories (name,icon,description) VALUES ('Desktop','🖥️','Desktop workstations and towers')`);
+      this.execSQL(`INSERT INTO categories (name,icon,description) VALUES ('Server','🗄️','Physical and virtual servers')`);
+      this.execSQL(`INSERT INTO categories (name,icon,description) VALUES ('Network','📡','Switches, routers, access points')`);
+      this.execSQL(`INSERT INTO categories (name,icon,description) VALUES ('Monitor','🖱️','Displays and monitors')`);
+      this.execSQL(`INSERT INTO categories (name,icon,description) VALUES ('Printer','🖨️','Printers and scanners')`);
+
+      const assets = [
+        ['Dell Latitude 5520','1','SN-DL5520-001','IT-001','Dell','Latitude 5520','HQ - Floor 2','Alice Johnson','Active','2023-03-15',1299.00,'2026-03-15','Assigned to dev team'],
+        ['MacBook Pro 14"','1','SN-MBP14-002','IT-002','Apple','MacBook Pro','HQ - Floor 3','Bob Smith','Active','2022-11-20',2499.00,'2025-11-20','Design department'],
+        ['HP ProDesk 600','2','SN-HP600-003','IT-003','HP','ProDesk 600','Server Room','','Active','2021-06-10',899.00,'2024-06-10',''],
+        ['Dell PowerEdge R750','3','SN-PE750-004','IT-004','Dell','PowerEdge R750','Data Center','','Active','2022-01-05',6500.00,'2025-01-05','Primary DB server'],
+        ['Cisco Catalyst 9300','4','SN-CC9300-005','IT-005','Cisco','Catalyst 9300','Server Room','','Active','2021-09-30',4200.00,'2024-09-30','Core switch'],
+        ['Dell U2722D Monitor','5','SN-U2722-006','IT-006','Dell','U2722D','HQ - Floor 2','Alice Johnson','Active','2023-03-15',450.00,'2026-03-15','Dual setup'],
+        ['HP LaserJet Pro','6','SN-HLP-007','IT-007','HP','LaserJet Pro M404dn','HQ - Floor 1','','Active','2020-07-12',380.00,'2023-07-12','Needs toner'],
+        ['Lenovo ThinkPad X1','1','SN-TPX1-008','IT-008','Lenovo','ThinkPad X1 Carbon','HQ - Floor 1','Carol Davis','In Repair','2021-04-22',1599.00,'2024-04-22','Screen issue'],
+        ['Old HP Desktop','2','SN-HPDT-009','IT-009','HP','Compaq Pro','Storage','','Retired','2015-01-01',600.00,'2018-01-01','EOL'],
+        ['Ubiquiti AP Pro','4','SN-UAP-010','IT-010','Ubiquiti','UAP-AC-Pro','HQ - Floor 2','','Active','2022-05-18',180.00,'2025-05-18',''],
+      ];
+
+      assets.forEach(a => {
+        const [name,cat,serial,tag,mfr,model,loc,assign,status,date,value,warranty,notes] = a;
+        this.execSQL(`INSERT INTO assets (name,category_id,serial_number,asset_tag,manufacturer,model,location,assigned_to,status,purchase_date,value,warranty_expiry,notes) VALUES ('${name}','${cat}','${serial}','${tag}','${mfr}','${model}','${loc}','${assign}','${status}','${date}','${value}','${warranty}','${notes}')`);
+      });
+    }
+  },
+
+  save() {
+    localStorage.setItem('it_inventory_db', JSON.stringify({
+      categories: this.categories,
+      assets: this.assets,
+      _catId: this._catId,
+      _assetId: this._assetId
+    }));
+  },
+
+  execSQL(sql) {
+    sql = sql.trim();
+
+    // INSERT INTO categories
+    if (/^INSERT INTO categories/i.test(sql)) {
+      const m = sql.match(/VALUES\s*\('(.+)'\)/i);
+      if (!m) return { error: 'Parse error' };
+      const vals = m[1].split("','").map(v => v.replace(/^'|'$/g,''));
+      const obj = {
+        id: this._catId++,
+        name: vals[0] || '',
+        icon: vals[1] || '📦',
+        description: vals[2] || '',
+        created_at: new Date().toISOString().split('T')[0]
+      };
+      this.categories.push(obj);
+      this.save();
+      return { insertId: obj.id };
+    }
+
+    // INSERT INTO assets
+    if (/^INSERT INTO assets/i.test(sql)) {
+      const m = sql.match(/VALUES\s*\((.+)\)$/is);
+      if (!m) return { error: 'Parse error' };
+      const vals = m[1].match(/'([^']*)'/g).map(v => v.slice(1,-1));
+      const obj = {
+        id: this._assetId++,
+        name: vals[0], category_id: parseInt(vals[1]),
+        serial_number: vals[2], asset_tag: vals[3],
+        manufacturer: vals[4], model: vals[5],
+        location: vals[6], assigned_to: vals[7],
+        status: vals[8], purchase_date: vals[9],
+        value: parseFloat(vals[10]) || 0,
+        warranty_expiry: vals[11], notes: vals[12] || '',
+        created_at: new Date().toISOString().split('T')[0]
+      };
+      this.assets.push(obj);
+      this.save();
+      return { insertId: obj.id };
+    }
+
+    // DELETE categories
+    if (/^DELETE FROM categories WHERE id\s*=\s*(\d+)/i.test(sql)) {
+      const id = parseInt(sql.match(/id\s*=\s*(\d+)/i)[1]);
+      const idx = this.categories.findIndex(c=>c.id===id);
+      if (idx>=0) { this.categories.splice(idx,1); this.save(); return {rowsAffected:1}; }
+      return {rowsAffected:0};
+    }
+
+    // DELETE assets
+    if (/^DELETE FROM assets WHERE id\s*=\s*(\d+)/i.test(sql)) {
+      const id = parseInt(sql.match(/id\s*=\s*(\d+)/i)[1]);
+      const idx = this.assets.findIndex(a=>a.id===id);
+      if (idx>=0) { this.assets.splice(idx,1); this.save(); return {rowsAffected:1}; }
+      return {rowsAffected:0};
+    }
+
+    // UPDATE assets
+    if (/^UPDATE assets SET/i.test(sql)) {
+      const idM = sql.match(/WHERE id\s*=\s*(\d+)/i);
+      if (!idM) return {error:'No WHERE clause'};
+      const id = parseInt(idM[1]);
+      const asset = this.assets.find(a=>a.id===id);
+      if (!asset) return {error:'Asset not found'};
+      const setM = sql.match(/SET (.+) WHERE/is)[1];
+      const pairs = setM.split(',').map(p=>p.trim());
+      pairs.forEach(pair => {
+        const [col, val] = pair.split('=').map(s=>s.trim());
+        const clean = val.replace(/^'|'$/g,'');
+        if (col === 'value') asset[col] = parseFloat(clean)||0;
+        else if (col === 'category_id') asset[col] = parseInt(clean);
+        else asset[col] = clean;
+      });
+      this.save();
+      return {rowsAffected:1};
+    }
+
+    // SELECT queries (simplified interpreter)
+    if (/^SELECT/i.test(sql)) {
+      return this._handleSelect(sql);
+    }
+
+    return {error:'Unknown SQL'};
+  },
+
+  _handleSelect(sql) {
+    let rows = [];
+    const sqlUp = sql.toUpperCase();
+
+    if (/FROM assets/i.test(sql)) rows = [...this.assets];
+    else if (/FROM categories/i.test(sql)) rows = [...this.categories];
+    else return {error:'Table not found'};
+
+    // JOIN category name
+    if (/FROM assets/i.test(sql)) {
+      rows = rows.map(a => ({
+        ...a,
+        category_name: (this.categories.find(c=>c.id===a.category_id)||{name:'Unknown'}).name
+      }));
+    }
+
+    // WHERE
+    const whereM = sql.match(/WHERE (.+?)(?:ORDER BY|GROUP BY|LIMIT|$)/is);
+    if (whereM) {
+      const cond = whereM[1].trim();
+      const eqM = cond.match(/(\w+)\s*=\s*'([^']*)'/);
+      const numM = cond.match(/(\w+)\s*=\s*(\d+)/);
+      const likeM = cond.match(/(\w+)\s+LIKE\s+'%([^%]*)%'/i);
+      if (eqM) { rows = rows.filter(r => r[eqM[1]] === eqM[2]); }
+      else if (numM) { rows = rows.filter(r => r[numM[1]] == numM[2]); }
+      else if (likeM) { rows = rows.filter(r => String(r[likeM[1]]||'').toLowerCase().includes(likeM[2].toLowerCase())); }
+    }
+
+    // ORDER BY
+    const orderM = sql.match(/ORDER BY (\w+)(\s+DESC)?/i);
+    if (orderM) {
+      const col = orderM[1]; const desc = !!orderM[2];
+      rows.sort((a,b) => {
+        if (a[col] < b[col]) return desc?1:-1;
+        if (a[col] > b[col]) return desc?-1:1;
+        return 0;
+      });
+    }
+
+    // LIMIT
+    const limitM = sql.match(/LIMIT (\d+)/i);
+    if (limitM) rows = rows.slice(0, parseInt(limitM[1]));
+
+    return { rows };
+  },
+
+  getCategoryById(id) { return this.categories.find(c=>c.id===id); }
+};
+
+// ─── INITIALIZE ───
+DB.init();
+
+// ─── NAV ───
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  event.currentTarget.classList.add('active');
+
+  if (name==='dashboard') refreshDashboard();
+  if (name==='inventory') renderAssets();
+  if (name==='categories') renderCategories();
+  if (name==='reports') renderReports();
+  if (name==='sql') renderSQL();
+}
+
+// ─── TOAST ───
+function toast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + type;
+  setTimeout(()=>{ el.className='toast'; }, 3000);
+}
+
+// ─── DASHBOARD ───
+function refreshDashboard() {
+  const assets = DB.assets;
+  const total = assets.length;
+  const active = assets.filter(a=>a.status==='Active').length;
+  const repair = assets.filter(a=>a.status==='In Repair').length;
+  const totalVal = assets.reduce((s,a)=>s+(a.value||0),0);
+
+  const statsRow = document.getElementById('stats-row');
+  statsRow.innerHTML = `
+    <div class="stat-card" style="--accent-color:var(--accent)">
+      <div class="stat-label">Total Assets</div>
+      <div class="stat-value">${total}</div>
+      <div class="stat-sub">${DB.categories.length} categories</div>
+    </div>
+    <div class="stat-card" style="--accent-color:var(--accent3)">
+      <div class="stat-label">Active</div>
+      <div class="stat-value">${active}</div>
+      <div class="stat-sub">${total?Math.round(active/total*100):0}% of total</div>
+    </div>
+    <div class="stat-card" style="--accent-color:var(--yellow)">
+      <div class="stat-label">In Repair</div>
+      <div class="stat-value">${repair}</div>
+      <div class="stat-sub">Needs attention</div>
+    </div>
+    <div class="stat-card" style="--accent-color:var(--accent2)">
+      <div class="stat-label">Total Value</div>
+      <div class="stat-value">$${(totalVal/1000).toFixed(1)}k</div>
+      <div class="stat-sub">Avg $${total?Math.round(totalVal/total):0}</div>
+    </div>
+  `;
+
+  // Recent
+  const recent = [...assets].sort((a,b)=>b.id-a.id).slice(0,6);
+  const tbody = document.getElementById('recent-assets');
+  tbody.innerHTML = recent.map(a=>{
+    const cat = DB.getCategoryById(a.category_id);
+    return `<tr>
+      <td>${a.name}</td>
+      <td>${cat?cat.icon+' '+cat.name:'—'}</td>
+      <td>${statusBadge(a.status)}</td>
+      <td>${a.created_at||'—'}</td>
+    </tr>`;
+  }).join('');
+
+  // Alerts
+  const alerts = [];
+  const expiringSoon = assets.filter(a => {
+    if (!a.warranty_expiry) return false;
+    const days = (new Date(a.warranty_expiry)-new Date()) / 86400000;
+    return days > 0 && days < 90;
+  });
+  if (expiringSoon.length) alerts.push({type:'warn', msg:`${expiringSoon.length} asset(s) warranty expiring within 90 days`});
+  if (repair) alerts.push({type:'err', msg:`${repair} asset(s) currently in repair`});
+  const retired = assets.filter(a=>a.status==='Retired').length;
+  if (retired) alerts.push({type:'info', msg:`${retired} retired asset(s) may be eligible for disposal`});
+  const unassigned = assets.filter(a=>!a.assigned_to && a.status==='Active').length;
+  if (unassigned) alerts.push({type:'info', msg:`${unassigned} active asset(s) unassigned`});
+  if (!alerts.length) alerts.push({type:'info', msg:'All systems nominal — no critical alerts'});
+
+  document.getElementById('alerts-list').innerHTML = alerts.map(al=>
+    `<div class="alert-item ${al.type}">${al.type==='warn'?'⚠':al.type==='err'?'✕':'ℹ'} &nbsp; ${al.msg}</div>`
+  ).join('');
+}
+
+// ─── ASSETS ───
+let editingId = null;
+
+function renderAssets() {
+  populateCategoryFilters();
+  filterAssets();
+}
+
+function populateCategoryFilters() {
+  ['filter-cat','m-category'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const val = el.value;
+    el.innerHTML = '<option value="">'+( id==='m-category'?'Select…':'All Categories' )+'</option>';
+    DB.categories.forEach(c => {
+      el.innerHTML += `<option value="${c.id}">${c.icon} ${c.name}</option>`;
+    });
+    el.value = val;
+  });
+}
+
+function filterAssets() {
+  const q = (document.getElementById('search-input').value||'').toLowerCase();
+  const cat = document.getElementById('filter-cat').value;
+  const status = document.getElementById('filter-status').value;
+  let assets = DB.assets;
+  if (q) assets = assets.filter(a => (a.name+a.serial_number+a.asset_tag+a.manufacturer+a.model+a.location+a.assigned_to).toLowerCase().includes(q));
+  if (cat) assets = assets.filter(a=>a.category_id==cat);
+  if (status) assets = assets.filter(a=>a.status===status);
+  renderAssetsTable(assets);
+}
+
+function renderAssetsTable(assets) {
+  const tbody = document.getElementById('assets-table');
+  if (!assets.length) {
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text-dim);padding:3rem">No assets found</td></tr>';
+    return;
+  }
+  tbody.innerHTML = assets.map(a=>{
+    const cat = DB.getCategoryById(a.category_id);
+    return `<tr>
+      <td style="color:var(--text-dim)">#${a.id}</td>
+      <td style="color:var(--text-bright);font-weight:500">${a.name}</td>
+      <td>${cat?cat.icon+' '+cat.name:'—'}</td>
+      <td style="color:var(--text-dim)">${a.serial_number||'—'}</td>
+      <td>${a.location||'—'}</td>
+      <td>${a.assigned_to||'<span style="color:var(--text-dim)">Unassigned</span>'}</td>
+      <td>${statusBadge(a.status)}</td>
+      <td style="color:var(--text-dim)">${a.purchase_date||'—'}</td>
+      <td style="color:var(--accent2)">$${(a.value||0).toLocaleString()}</td>
+      <td>
+        <div style="display:flex;gap:0.3rem">
+          <button class="btn btn-sm btn-outline" onclick="editAsset(${a.id})">✎</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteAsset(${a.id})">✕</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function statusBadge(s) {
+  if (s==='Active') return `<span class="badge badge-active">${s}</span>`;
+  if (s==='Retired') return `<span class="badge badge-retired">${s}</span>`;
+  return `<span class="badge badge-repair">${s}</span>`;
+}
+
+function openAddModal() {
+  editingId = null;
+  document.getElementById('modal-title').textContent = '+ Add Asset';
+  ['m-name','m-serial','m-tag','m-manufacturer','m-model','m-location','m-assigned','m-notes','m-value'].forEach(id=>{ const el=document.getElementById(id); if(el)el.value=''; });
+  document.getElementById('m-status').value = 'Active';
+  document.getElementById('m-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('m-warranty').value = '';
+  populateCategoryFilters();
+  document.getElementById('asset-modal').classList.add('open');
+}
+
+function editAsset(id) {
+  const a = DB.assets.find(x=>x.id===id);
+  if (!a) return;
+  editingId = id;
+  document.getElementById('modal-title').textContent = '✎ Edit Asset';
+  populateCategoryFilters();
+  document.getElementById('m-name').value = a.name||'';
+  document.getElementById('m-category').value = a.category_id||'';
+  document.getElementById('m-serial').value = a.serial_number||'';
+  document.getElementById('m-tag').value = a.asset_tag||'';
+  document.getElementById('m-manufacturer').value = a.manufacturer||'';
+  document.getElementById('m-model').value = a.model||'';
+  document.getElementById('m-location').value = a.location||'';
+  document.getElementById('m-assigned').value = a.assigned_to||'';
+  document.getElementById('m-status').value = a.status||'Active';
+  document.getElementById('m-date').value = a.purchase_date||'';
+  document.getElementById('m-value').value = a.value||'';
+  document.getElementById('m-warranty').value = a.warranty_expiry||'';
+  document.getElementById('m-notes').value = a.notes||'';
+  document.getElementById('asset-modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('asset-modal').classList.remove('open');
+}
+
+function saveAsset() {
+  const name = document.getElementById('m-name').value.trim();
+  const catId = document.getElementById('m-category').value;
+  if (!name) { toast('Asset name is required','err'); return; }
+  if (!catId) { toast('Please select a category','err'); return; }
+
+  const fields = {
+    name, category_id: catId,
+    serial_number: document.getElementById('m-serial').value,
+    asset_tag: document.getElementById('m-tag').value,
+    manufacturer: document.getElementById('m-manufacturer').value,
+    model: document.getElementById('m-model').value,
+    location: document.getElementById('m-location').value,
+    assigned_to: document.getElementById('m-assigned').value,
+    status: document.getElementById('m-status').value,
+    purchase_date: document.getElementById('m-date').value,
+    value: document.getElementById('m-value').value||0,
+    warranty_expiry: document.getElementById('m-warranty').value,
+    notes: document.getElementById('m-notes').value
+  };
+
+  if (editingId) {
+    const setClauses = Object.entries(fields).map(([k,v])=>`${k}='${String(v).replace(/'/g,"''")}'`).join(', ');
+    DB.execSQL(`UPDATE assets SET ${setClauses} WHERE id=${editingId}`);
+    toast('Asset updated ✓');
+  } else {
+    const keys = Object.keys(fields).join(',');
+    const vals = Object.values(fields).map(v=>`'${String(v).replace(/'/g,"''")}'`).join(',');
+    DB.execSQL(`INSERT INTO assets (${keys}) VALUES (${vals})`);
+    toast('Asset added ✓');
+  }
+
+  closeModal();
+  filterAssets();
+}
+
+function deleteAsset(id) {
+  if (!confirm('Delete this asset?')) return;
+  DB.execSQL(`DELETE FROM assets WHERE id=${id}`);
+  filterAssets();
+  toast('Asset deleted');
+}
+
+// ─── CATEGORIES ───
+function renderCategories() {
+  const grid = document.getElementById('cat-grid');
+  if (!DB.categories.length) {
+    grid.innerHTML = '<div class="empty-state"><div class="icon">◈</div>No categories yet</div>';
+    return;
+  }
+  grid.innerHTML = DB.categories.map(c=>{
+    const count = DB.assets.filter(a=>a.category_id===c.id).length;
+    return `<div class="cat-card">
+      <div class="cat-icon">${c.icon||'📦'}</div>
+      <div class="cat-info">
+        <div class="cat-name">${c.name}</div>
+        <div class="cat-count">${count} asset${count!==1?'s':''} &nbsp;·&nbsp; ${c.description||'No description'}</div>
+      </div>
+      <div class="cat-actions">
+        <button class="btn btn-sm btn-danger" onclick="deleteCategory(${c.id})" title="Delete">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function addCategory() {
+  const name = document.getElementById('cat-name').value.trim();
+  const icon = document.getElementById('cat-icon').value.trim() || '📦';
+  const desc = document.getElementById('cat-desc').value.trim();
+  if (!name) { toast('Category name required','err'); return; }
+  if (DB.categories.find(c=>c.name.toLowerCase()===name.toLowerCase())) { toast('Category already exists','err'); return; }
+  DB.execSQL(`INSERT INTO categories (name,icon,description) VALUES ('${name}','${icon}','${desc}')`);
+  document.getElementById('cat-name').value='';
+  document.getElementById('cat-icon').value='';
+  document.getElementById('cat-desc').value='';
+  renderCategories();
+  toast('Category added ✓');
+}
+
+function deleteCategory(id) {
+  const count = DB.assets.filter(a=>a.category_id===id).length;
+  if (count > 0) { toast(`Cannot delete: ${count} asset(s) use this category`,'err'); return; }
+  if (!confirm('Delete this category?')) return;
+  DB.execSQL(`DELETE FROM categories WHERE id=${id}`);
+  renderCategories();
+  toast('Category deleted');
+}
+
+// ─── REPORTS ───
+function renderReports() {
+  renderCategoryChart();
+  renderStatusChart();
+  renderLocationChart();
+  renderValueChart();
+  renderSummaryTable();
+}
+
+function renderCategoryChart() {
+  const counts = {};
+  DB.assets.forEach(a=>{
+    const cat = DB.getCategoryById(a.category_id);
+    const name = cat?cat.name:'Unknown';
+    counts[name] = (counts[name]||0)+1;
+  });
+  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  const max = Math.max(...Object.values(counts),1);
+  const colors = ['var(--accent)','var(--accent2)','var(--accent3)','var(--yellow)','#b48eff','#ff8cdb'];
+  document.getElementById('chart-category').innerHTML = sorted.map(([name,cnt],i)=>`
+    <div class="bar-row">
+      <div class="bar-label">${name}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${cnt/max*100}%;background:${colors[i%colors.length]}" data-value="${cnt}"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderStatusChart() {
+  const counts = {Active:0,Retired:0,'In Repair':0};
+  DB.assets.forEach(a=>{ if(counts[a.status]!==undefined) counts[a.status]++; });
+  const total = DB.assets.length||1;
+  const colors = {'Active':'#7cfc00','Retired':'#5a6380','In Repair':'#ffcc00'};
+
+  // SVG donut
+  let offset = 0;
+  const r = 50, cx=60, cy=60, strokeW=18;
+  const circ = 2*Math.PI*r;
+  const segments = Object.entries(counts).filter(([,v])=>v>0).map(([name,val])=>{
+    const pct = val/total;
+    const seg = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${colors[name]}" stroke-width="${strokeW}"
+      stroke-dasharray="${pct*circ} ${circ}" stroke-dashoffset="${-offset*circ}" style="transform:rotate(-90deg);transform-origin:${cx}px ${cy}px"/>`;
+    offset += pct;
+    return {seg, name, val, color:colors[name]};
+  });
+
+  const svg = `<svg class="pie-svg" width="120" height="120" viewBox="0 0 120 120">
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--bg3)" stroke-width="${strokeW}"/>
+    ${segments.map(s=>s.seg).join('')}
+    <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" fill="var(--text-bright)" font-family="IBM Plex Mono" font-size="14" font-weight="600">${total}</text>
+  </svg>`;
+
+  const legend = `<div class="legend">${segments.map(s=>`
+    <div class="legend-item">
+      <div class="legend-dot" style="background:${s.color}"></div>
+      ${s.name} (${s.val})
+    </div>`).join('')}</div>`;
+
+  document.getElementById('chart-status').innerHTML = svg + legend;
+}
+
+function renderLocationChart() {
+  const counts = {};
+  DB.assets.forEach(a=>{
+    const loc = a.location||'Unknown';
+    counts[loc]=(counts[loc]||0)+1;
+  });
+  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const max = Math.max(...sorted.map(s=>s[1]),1);
+  document.getElementById('chart-location').innerHTML = sorted.map(([loc,cnt])=>`
+    <div class="bar-row">
+      <div class="bar-label">${loc}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${cnt/max*100}%;background:var(--accent2)" data-value="${cnt}"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderValueChart() {
+  const vals = {};
+  DB.assets.forEach(a=>{
+    const cat = DB.getCategoryById(a.category_id);
+    const name = cat?cat.name:'Unknown';
+    vals[name]=(vals[name]||0)+(a.value||0);
+  });
+  const sorted = Object.entries(vals).sort((a,b)=>b[1]-a[1]);
+  const max = Math.max(...Object.values(vals),1);
+  document.getElementById('chart-value').innerHTML = sorted.map(([name,val])=>`
+    <div class="bar-row">
+      <div class="bar-label">${name}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${val/max*100}%;background:var(--accent3)" data-value="$${val.toLocaleString()}"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderSummaryTable() {
+  const rows = DB.categories.map(cat=>{
+    const assets = DB.assets.filter(a=>a.category_id===cat.id);
+    const total = assets.length;
+    const active = assets.filter(a=>a.status==='Active').length;
+    const retired = assets.filter(a=>a.status==='Retired').length;
+    const repair = assets.filter(a=>a.status==='In Repair').length;
+    const totalVal = assets.reduce((s,a)=>s+(a.value||0),0);
+    const avgVal = total ? Math.round(totalVal/total) : 0;
+    return {cat, total, active, retired, repair, totalVal, avgVal};
+  }).sort((a,b)=>b.total-a.total);
+
+  document.getElementById('summary-table').innerHTML = rows.map(r=>`<tr>
+    <td>${r.cat.icon} ${r.cat.name}</td>
+    <td style="color:var(--text-bright)">${r.total}</td>
+    <td style="color:var(--accent3)">${r.active}</td>
+    <td style="color:var(--text-dim)">${r.retired}</td>
+    <td style="color:var(--yellow)">${r.repair}</td>
+    <td style="color:var(--accent2)">$${r.totalVal.toLocaleString()}</td>
+    <td>$${r.avgVal.toLocaleString()}</td>
+  </tr>`).join('');
+}
+
+function exportCSV() {
+  const headers = ['ID','Name','Category','Serial Number','Asset Tag','Manufacturer','Model','Location','Assigned To','Status','Purchase Date','Value','Warranty Expiry','Notes'];
+  const rows = DB.assets.map(a=>{
+    const cat = DB.getCategoryById(a.category_id);
+    return [a.id,a.name,cat?cat.name:'',a.serial_number,a.asset_tag,a.manufacturer,a.model,a.location,a.assigned_to,a.status,a.purchase_date,a.value,a.warranty_expiry,a.notes]
+      .map(v=>`"${String(v||'').replace(/"/g,'""')}"`)
+  });
+  const csv = [headers,...rows].map(r=>r.join(',')).join('\n');
+  const blob = new Blob([csv],{type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download='it_inventory_export.csv'; a.click();
+}
+
+// ─── SQL VIEW ───
+const SCHEMA = `-- ============================================
+-- IT INVENTORY SYSTEM - SQL SCHEMA
+-- SQLite-compatible DDL
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS categories (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  name        TEXT    NOT NULL UNIQUE,
+  icon        TEXT    DEFAULT '📦',
+  description TEXT,
+  created_at  DATE    DEFAULT (date('now'))
+);
+
+CREATE TABLE IF NOT EXISTS assets (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  name            TEXT    NOT NULL,
+  category_id     INTEGER REFERENCES categories(id),
+  serial_number   TEXT,
+  asset_tag       TEXT    UNIQUE,
+  manufacturer    TEXT,
+  model           TEXT,
+  location        TEXT,
+  assigned_to     TEXT,
+  status          TEXT    DEFAULT 'Active'
+                  CHECK (status IN ('Active','Retired','In Repair')),
+  purchase_date   DATE,
+  value           DECIMAL(10,2) DEFAULT 0,
+  warranty_expiry DATE,
+  notes           TEXT,
+  created_at      DATE    DEFAULT (date('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_assets_category   ON assets(category_id);
+CREATE INDEX IF NOT EXISTS idx_assets_status      ON assets(status);
+CREATE INDEX IF NOT EXISTS idx_assets_location    ON assets(location);
+CREATE INDEX IF NOT EXISTS idx_assets_assigned_to ON assets(assigned_to);
+
+-- ─── Useful views ────────────────────────────
+
+CREATE VIEW IF NOT EXISTS v_assets_full AS
+  SELECT
+    a.*,
+    c.name  AS category_name,
+    c.icon  AS category_icon
+  FROM assets a
+  LEFT JOIN categories c ON a.category_id = c.id;
+
+CREATE VIEW IF NOT EXISTS v_category_summary AS
+  SELECT
+    c.id,
+    c.name,
+    c.icon,
+    COUNT(a.id)                         AS total_assets,
+    SUM(CASE WHEN a.status='Active'    THEN 1 ELSE 0 END) AS active,
+    SUM(CASE WHEN a.status='Retired'   THEN 1 ELSE 0 END) AS retired,
+    SUM(CASE WHEN a.status='In Repair' THEN 1 ELSE 0 END) AS in_repair,
+    SUM(a.value)                        AS total_value,
+    AVG(a.value)                        AS avg_value
+  FROM categories c
+  LEFT JOIN assets a ON c.id = a.category_id
+  GROUP BY c.id, c.name, c.icon;
+`;
+
+function renderSQL() {
+  document.getElementById('schema-viewer').textContent = SCHEMA;
+  refreshSQL();
+}
+
+function refreshSQL() {
+  let sql = '-- CATEGORIES\n';
+  DB.categories.forEach(c=>{
+    sql += `INSERT INTO categories (name, icon, description) VALUES ('${c.name}', '${c.icon}', '${c.description||''}');\n`;
+  });
+  sql += '\n-- ASSETS\n';
+  DB.assets.forEach(a=>{
+    sql += `INSERT INTO assets (name, category_id, serial_number, asset_tag, manufacturer, model, location, assigned_to, status, purchase_date, value, warranty_expiry, notes) VALUES ('${a.name}', ${a.category_id}, '${a.serial_number||''}', '${a.asset_tag||''}', '${a.manufacturer||''}', '${a.model||''}', '${a.location||''}', '${a.assigned_to||''}', '${a.status}', '${a.purchase_date||''}', ${a.value||0}, '${a.warranty_expiry||''}', '${a.notes||''}');\n`;
+  });
+  document.getElementById('data-viewer').textContent = sql;
+}
+
+function downloadSQL() {
+  const full = SCHEMA + '\n\n' + document.getElementById('data-viewer').textContent;
+  const blob = new Blob([full],{type:'text/sql'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download='it_inventory.sql'; a.click();
+}
+
+function runQuery() {
+  const sql = document.getElementById('custom-query').value.trim();
+  if (!sql) return;
+  const result = DB.execSQL(sql);
+  const el = document.getElementById('query-result');
+  if (result.error) {
+    el.innerHTML = `<div class="alert-item err">✕ ${result.error}</div>`;
+    return;
+  }
+  if (result.rows) {
+    if (!result.rows.length) {
+      el.innerHTML = `<div class="alert-item info">ℹ No rows returned</div>`;
+      return;
+    }
+    const cols = Object.keys(result.rows[0]).filter(k=>k!=='__proto__');
+    el.innerHTML = `<div class="table-wrap"><table>
+      <thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+      <tbody>${result.rows.map(r=>`<tr>${cols.map(c=>`<td>${r[c]??''}</td>`).join('')}</tr>`).join('')}</tbody>
+    </table></div>
+    <div style="font-family:var(--mono);font-size:0.7rem;color:var(--text-dim);margin-top:0.5rem">${result.rows.length} row(s) returned</div>`;
+  } else {
+    el.innerHTML = `<div class="alert-item info">ℹ Query executed: ${JSON.stringify(result)}</div>`;
+  }
+}
+
+function clearQuery() {
+  document.getElementById('custom-query').value='';
+  document.getElementById('query-result').innerHTML='';
+}
+
+// ─── BOOT ───
+refreshDashboard();
+</script>
+</body>
+</html>
